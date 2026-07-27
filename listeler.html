@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Listelerim · Veteriner Hekim Tercih Robotu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="listpage">
+<header class="top">
+  <div class="top-in">
+    <a class="logobrand" href="index.html">
+      <span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c3 2.5 4.5 5.5 4.5 9a4.5 4.5 0 0 1-9 0c0-3.5 1.5-6.5 4.5-9Z"/><path d="M12 12v9M8.5 16.5 12 18l3.5-1.5"/></svg></span>
+      <span class="brand"><span class="bt">Listelerim</span><span class="bs">Tercihlerinizi karşılaştırın ve sıralayın</span></span>
+    </a>
+    <div class="top-right">
+      <div class="score-mini">
+        <label for="score">KPSS</label>
+        <input id="score" type="text" inputmode="decimal" maxlength="6" placeholder="Puan" autocomplete="off">
+      </div>
+      <a class="listbtn" href="index.html">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        <span class="lbtxt">Robota dön</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<div class="lm-wrap">
+  <aside class="lm-side" id="lmSide">
+    <div class="lm-side-h">Listeler</div>
+    <div class="lm-lists" id="lmLists"></div>
+    <div class="lm-new">
+      <input type="text" id="newList" placeholder="Yeni liste adı…" maxlength="40" autocomplete="off">
+      <button id="newBtn" type="button">+ Oluştur</button>
+    </div>
+  </aside>
+  <main class="lm-main" id="lmMain"></main>
+</div>
+
+<div class="bulkbar" id="bulkbar">
+  <span class="bb-count" id="bbCount">0 seçili</span>
+  <select id="bbTarget" class="bb-sel"></select>
+  <button class="bb-act move" id="bbMove" type="button">Taşı</button>
+  <button class="bb-act copy" id="bbCopy" type="button">Kopyala</button>
+  <button class="bb-act del" id="bbDel" type="button">Listeden çıkar</button>
+  <button class="bb-x" id="bbClear" type="button">Vazgeç</button>
+</div>
+
+<script src="units.js"></script>
+<script src="common.js"></script>
+<script>
+const el=id=>document.getElementById(id);
+let activeId=localStorage.getItem("vhtr_active")||null;
+let approach="son";
+let score=null;
+let selected=new Set();
+let sortState={col:null,dir:1};
+window.PAGE_REFRESH=()=>renderAll();
+
+Store.init().then(()=>{
+  score=Store.getScore();
+  if(score!=null) el("score").value=dec(score);
+  el("score").addEventListener("input",e=>{
+    const v=parseFloat(e.target.value.replace(",",".")); score=isNaN(v)?null:v; Store.setScore(score); renderTable();
+  });
+  el("newBtn").addEventListener("click",()=>{
+    const n=el("newList").value.trim(); if(!n)return;
+    const l=Store.create(n); el("newList").value=""; activeId=l.id; persistActive(); renderAll();
+  });
+  el("newList").addEventListener("keydown",e=>{if(e.key==="Enter")el("newBtn").click();});
+  el("bbClear").addEventListener("click",clearSel);
+  el("bbMove").addEventListener("click",()=>bulk("move"));
+  el("bbCopy").addEventListener("click",()=>bulk("copy"));
+  el("bbDel").addEventListener("click",()=>bulk("del"));
+  window.addEventListener("storage",renderAll);
+  const lists=Store.lists();
+  if(!activeId || !lists.find(l=>l.id===activeId)) activeId=lists[0]?lists[0].id:null;
+  renderAll();
+});
+
+function persistActive(){ if(activeId) localStorage.setItem("vhtr_active",activeId); }
+function renderAll(){ renderSidebar(); renderTable(); renderBulk(); }
+
+function renderSidebar(){
+  const lists=Store.lists();
+  el("lmLists").innerHTML = lists.length? lists.map(l=>`
+    <div class="lm-list${l.id===activeId?' on':''}" data-id="${l.id}">
+      <button class="lm-pick" data-id="${l.id}"><span class="ln">${escapeHtml(l.name)}</span><span class="lc">${l.items.length}</span></button>
+      <button class="lm-mini rn" data-id="${l.id}" title="Yeniden adlandır"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+      <button class="lm-mini dl" data-id="${l.id}" title="Sil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>
+    </div>`).join("")
+    : `<div class="lm-empty-s">Henüz liste yok.<br>Ana ekrandan birim ekledikçe listeler burada belirir.</div>`;
+  el("lmLists").querySelectorAll(".lm-pick").forEach(b=>b.addEventListener("click",()=>{activeId=b.dataset.id;persistActive();clearSel();renderAll();}));
+  el("lmLists").querySelectorAll(".rn").forEach(b=>b.addEventListener("click",()=>{
+    const l=Store.get(b.dataset.id); const nn=prompt("Liste adı:",l.name); if(nn&&nn.trim()){Store.rename(l.id,nn.trim());renderAll();}
+  }));
+  el("lmLists").querySelectorAll(".dl").forEach(b=>b.addEventListener("click",()=>{
+    const l=Store.get(b.dataset.id); if(confirm(`"${l.name}" listesi silinsin mi? (${l.items.length} birim)`)){
+      Store.remove(l.id); if(activeId===l.id){const r=Store.lists();activeId=r[0]?r[0].id:null;persistActive();} clearSel(); renderAll();
+    }
+  }));
+}
+
+function activeUnits(){
+  const l=Store.get(activeId); if(!l)return [];
+  let arr=l.items.map(unitById).filter(Boolean);
+  if(sortState.col){
+    const key=sortState.col, d=sortState.dir;
+    const val=u=>({
+      il:u.il+u.ilce, kontenjan:u.buYilKontenjan==null?-1:u.buYilKontenjan,
+      band:score!=null?bandFor(u,score,approach).band.id:-1,
+      son:u.istatistik?u.istatistik.sonEnKucuk:-1, ort:u.istatistik?u.istatistik.ortEnKucuk:-1,
+      gar:u.istatistik?u.istatistik.enYuksekEsik:-1, iyi:u.istatistik?u.istatistik.enDusukEsik:-1,
+      donem:u.istatistik?u.istatistik.donemSayisi:0, nufus:u.nufus==null?-1:u.nufus,
+      merkez:u.merkezeKm==null?1e9:u.merkezeKm, hav:u.havalimaniKm==null?1e9:u.havalimaniKm
+    }[key]);
+    arr.sort((a,b)=>{const x=val(a),y=val(b); return (typeof x==="string")? d*x.localeCompare(y,"tr") : d*(x-y);});
+  }
+  return arr;
+}
+
+function renderTable(){
+  const l=Store.get(activeId);
+  const m=el("lmMain");
+  if(!l){ m.innerHTML=`<div class="lm-empty"><h3>Liste seçili değil</h3><p>Soldan bir liste seçin ya da yeni liste oluşturun. Birimleri <a href="index.html">ana ekrandan</a> "Listeye ekle" ile ekleyebilirsiniz.</p></div>`; return; }
+  const units=activeUnits();
+  const apBtns=Object.entries(APPROACHES).map(([k,v])=>`<button data-a="${k}" class="${k===approach?'on':''} hastip" data-tip="${v.ipucu}">${v.ad}</button>`).join("");
+  const printDate=new Date().toLocaleDateString("tr-TR",{day:"numeric",month:"long",year:"numeric"});
+
+  let head = `
+    <div class="lm-toolbar">
+      <div class="lm-title-row">
+        <h1 class="lm-title" id="lmTitle">${escapeHtml(l.name)}</h1>
+        <span class="lm-sub">${units.length} birim${score!=null?" · KPSS "+dec(score):""}</span>
+      </div>
+      <div class="lm-tools no-print">
+        <div class="lm-approach"><span class="la-lbl">İhtimal eşiği:</span><div class="seg small" id="lmApproach">${apBtns}</div></div>
+        <button class="lm-print" id="lmPrint" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2M6 14h12v7H6z"/></svg> Yazdır / PDF</button>
+      </div>
+    </div>
+    <div class="print-title">${escapeHtml(l.name)} · Veteriner Hekim Tercih Listesi <span>${printDate}${score!=null?" · KPSS "+dec(score):""}</span></div>`;
+
+  if(!units.length){
+    m.innerHTML = head + `<div class="lm-empty"><h3>Bu liste boş</h3><p><a href="index.html">Ana ekrana</a> gidip birimlerin üzerindeki "Listeye ekle" ile bu listeye tercih ekleyin.</p></div>`;
+    bindApproach(); const pb=el("lmPrint"); if(pb)pb.addEventListener("click",()=>window.print()); bindTitle(l); return;
+  }
+
+  const th=(key,label,cls="")=>`<th class="${cls} sortable${sortState.col===key?' sorted':''}" data-sort="${key}">${label}<span class="ar">${sortState.col===key?(sortState.dir>0?'▲':'▼'):''}</span></th>`;
+  const rows=units.map((u,i)=>{
+    const r=score!=null?bandFor(u,score,approach):{band:bandById(0)};
+    const b=r.band;
+    const bandCell = score==null? `<span class="tb-muted">puan girin</span>`
+      : `<span class="tb-band" style="color:${b.c};background:${b.s}">${b.id===0?"Veri yok":b.ad}${sinirliVeri(u)?'<span class="sinirli">/sınırlı</span>':''}</span>`;
+    const sel=selected.has(u.id);
+    return `<tr class="${sel?'sel':''}${veriYok(u)?' verisiz':''}" data-id="${u.id}">
+      <td class="c-chk no-print"><label class="tchk"><input type="checkbox" data-id="${u.id}" ${sel?'checked':''}><span class="chkbox"></span></label></td>
+      <td class="c-ord no-print"><div class="ord"><button class="ordbtn up" data-id="${u.id}" ${i===0?'disabled':''}>▲</button><span class="ordn">${i+1}</span><button class="ordbtn dn" data-id="${u.id}" ${i===units.length-1?'disabled':''}>▼</button></div></td>
+      <td class="c-ord print-only">${i+1}</td>
+      <td class="c-name"><span class="tn-il">${titleTr(u.il)}</span><span class="tn-ad">${ilceAd(u)}</span></td>
+      <td class="c-num">${u.buYilAcik?u.buYilKontenjan:'<span class="tb-muted">—</span>'}</td>
+      <td class="c-band">${bandCell}</td>
+      <td class="c-num">${u.istatistik?dec(u.istatistik.sonEnKucuk):'—'}</td>
+      <td class="c-num">${u.istatistik?dec(u.istatistik.ortEnKucuk):'—'}</td>
+      <td class="c-num">${u.istatistik?dec(u.istatistik.enYuksekEsik):'—'}</td>
+      <td class="c-num">${u.istatistik?dec(u.istatistik.enDusukEsik):'—'}</td>
+      <td class="c-num">${u.istatistik?u.istatistik.donemSayisi:'<span class="tb-muted">0</span>'}</td>
+      <td class="c-num">${fmt(u.nufus)}</td>
+      <td class="c-num">${u.merkezeKm===0?'Merkez':(u.merkezeKm!=null?u.merkezeKm:'—')}</td>
+      <td class="c-hav">${u.havalimani?titleTr(u.havalimani).replace(/ \(.*\)/,''):'—'}${u.havalimaniKm!=null?' <small>'+u.havalimaniKm+'km</small>':''}</td>
+      <td class="c-act no-print"><a class="tact map" href="${mapsQuery(u)}" target="_blank" rel="noopener" title="Haritada gör"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.5-7-11a7 7 0 1 1 14 0c0 5.5-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg></a>
+        <button class="tact rem" data-id="${u.id}" title="Listeden çıkar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></td>
+    </tr>`;
+  }).join("");
+
+  m.innerHTML = head + `
+    <div class="tbl-scroll">
+    <table class="lm-table">
+      <thead><tr>
+        <th class="c-chk no-print"><label class="tchk"><input type="checkbox" id="selAll"><span class="chkbox"></span></label></th>
+        <th class="c-ord no-print">Sıra</th><th class="c-ord print-only">#</th>
+        ${th("il","İl / İlçe","c-name")}
+        ${th("kontenjan","Kont.","c-num")}
+        ${th("band","İhtimal","c-band")}
+        ${th("son","Son taban","c-num")}
+        ${th("ort","Ort.","c-num")}
+        ${th("gar","En yük.","c-num")}
+        ${th("iyi","En düş.","c-num")}
+        ${th("donem","Dönem","c-num")}
+        ${th("nufus","Nüfus","c-num")}
+        ${th("merkez","Merkez km","c-num")}
+        <th class="c-hav">Havalimanı</th>
+        <th class="c-act no-print"></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+    <div class="lm-hint no-print">Sütun başlığına tıklayarak sıralayın (sıralama tercih sıranıza kaydedilir) · ▲▼ ile tek tek taşıyın · satırları seçip alttan başka listeye taşıyın/kopyalayın.</div>`;
+
+  bindApproach(); bindTitle(l);
+  el("lmPrint").addEventListener("click",()=>window.print());
+  m.querySelectorAll("th.sortable").forEach(t=>t.addEventListener("click",()=>doSort(t.dataset.sort)));
+  m.querySelectorAll(".ordbtn.up").forEach(b=>b.addEventListener("click",()=>moveRow(b.dataset.id,-1)));
+  m.querySelectorAll(".ordbtn.dn").forEach(b=>b.addEventListener("click",()=>moveRow(b.dataset.id,1)));
+  m.querySelectorAll(".tact.rem").forEach(b=>b.addEventListener("click",()=>{Store.removeItem(activeId,b.dataset.id);selected.delete(b.dataset.id);renderAll();}));
+  m.querySelectorAll("input[data-id]").forEach(cb=>cb.addEventListener("change",()=>{cb.checked?selected.add(cb.dataset.id):selected.delete(cb.dataset.id);renderRowsSel();renderBulk();}));
+  const sa=el("selAll"); if(sa){sa.checked=units.length>0&&units.every(u=>selected.has(u.id)); sa.addEventListener("change",()=>{units.forEach(u=>sa.checked?selected.add(u.id):selected.delete(u.id));renderAll();});}
+  m.querySelectorAll(".lm-table tbody tr").forEach(tr=>tr.addEventListener("click",e=>{
+    if(e.target.closest(".c-chk,.c-ord,.c-act,input,button,a")) return;
+    const u=unitById(tr.dataset.id); if(u) openUnitModal(u,score,approach);
+  }));
+}
+function renderRowsSel(){ document.querySelectorAll(".lm-table tbody tr").forEach(tr=>tr.classList.toggle("sel",selected.has(tr.dataset.id))); }
+
+function bindApproach(){ document.querySelectorAll("#lmApproach button").forEach(b=>b.addEventListener("click",()=>{approach=b.dataset.a;renderTable();})); }
+function bindTitle(l){ const t=el("lmTitle"); if(t)t.addEventListener("dblclick",()=>{const nn=prompt("Liste adı:",l.name);if(nn&&nn.trim()){Store.rename(l.id,nn.trim());renderAll();}}); }
+function doSort(col){ if(sortState.col===col)sortState.dir*=-1; else{sortState.col=col;sortState.dir=1;}
+  const ordered=activeUnits().map(u=>u.id); Store.reorder(activeId,ordered); renderTable(); }
+function moveRow(id,dir){
+  const l=Store.get(activeId); const items=[...l.items]; const i=items.indexOf(id); const j=i+dir;
+  if(i<0||j<0||j>=items.length)return; [items[i],items[j]]=[items[j],items[i]];
+  sortState.col=null; Store.reorder(activeId,items); renderTable();
+}
+
+function renderBulk(){
+  el("bulkbar").classList.toggle("on",selected.size>0);
+  el("bbCount").textContent=selected.size+" seçili";
+  const others=Store.lists().filter(l=>l.id!==activeId);
+  el("bbTarget").innerHTML = others.length? others.map(l=>`<option value="${l.id}">${escapeHtml(l.name)}</option>`).join("")
+    : `<option value="">(başka liste yok)</option>`;
+}
+function clearSel(){ selected.clear(); renderAll(); }
+function bulk(kind){
+  const ids=[...selected]; if(!ids.length)return;
+  if(kind==="del"){ ids.forEach(id=>Store.removeItem(activeId,id)); clearSel(); return; }
+  const target=el("bbTarget").value; if(!target){alert("Önce başka bir liste oluşturun.");return;}
+  ids.forEach(id=>{ Store.copyItem(target,id); if(kind==="move")Store.removeItem(activeId,id); });
+  if(kind==="move")selected.clear();
+  renderAll();
+}
+function escapeHtml(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+</script>
+</body>
+</html>

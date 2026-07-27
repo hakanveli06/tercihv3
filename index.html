@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Betül Tercih Robotu · Tarım ve Orman Bakanlığı</title>
+<meta name="description" content="KPSS puanına göre veteriner hekim atama tercih robotu: geçmiş atama puanları, ilçe nüfusu, merkeze ve havalimanına uzaklık, liste yönetimi ve karşılaştırma.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <a class="logobrand" href="index.html">
+      <span class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3c3 2.5 4.5 5.5 4.5 9a4.5 4.5 0 0 1-9 0c0-3.5 1.5-6.5 4.5-9Z"/><path d="M12 12v9M8.5 16.5 12 18l3.5-1.5"/></svg>
+      </span>
+      <span class="brand">
+        <span class="bt">Betül Tercih Robotu</span>
+        <span class="bs">Tarım ve Orman Bakanlığı · KPSS ile atama</span>
+      </span>
+    </a>
+    <div class="top-right">
+      <span class="pill" id="topKadro">—</span>
+      <a class="listbtn" href="listeler.html">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+        <span class="lbtxt">Listelerim</span><span class="lcount" id="listCount">0</span>
+      </a>
+      <button class="hfilter" id="mobBtn" type="button" aria-label="Filtreler">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg><span>Filtreler</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <aside class="panel" id="panel">
+    <div class="card score-hero">
+      <div class="lbl"><span>KPSS Puanınız</span></div>
+      <div class="score-box"><input id="score" type="text" inputmode="decimal" maxlength="6" placeholder="0,00" autocomplete="off"></div>
+      <div class="score-hint" id="scoreHint">Puanınızı girin, ihtimaller anında hesaplansın.</div>
+    </div>
+
+    <div class="card ctrl" id="ctrlCard">
+      <h3>Yerleşme İhtimali</h3>
+      <div class="field">
+        <label>Hangi döneme göre? <span class="sub">Karşılaştırma eşiği</span></label>
+        <div class="seg" id="approach">
+          <button data-a="son" class="on hastip" data-tip="En güncel dönemin (2024-4) taban puanını referans alır. Bugünkü rekabete en yakın tahmin.">Son Dönem</button>
+          <button data-a="ort" class="hastip" data-tip="Tüm dönemlerdeki taban puanlarının ortalamasını referans alır. Dengeli bir tahmin.">Ortalama</button>
+          <button data-a="gar" class="hastip" data-tip="Gözlenen EN YÜKSEK taban puanı referans alınır. En temkinli senaryo — buraya göre yeşilse yerleşme ihtimali güçlüdür.">Garantici</button>
+          <button data-a="iyi" class="hastip" data-tip="Gözlenen EN DÜŞÜK taban puanı referans alınır. En iyimser senaryo.">İyimser</button>
+        </div>
+        <div class="seg-help" id="segHelp"></div>
+      </div>
+
+      <div class="field">
+        <label>En düşük ihtimal seviyesi</label>
+        <select id="minBand">
+          <option value="0">Tümünü göster</option>
+          <option value="3">Sınırda ve üstü</option>
+          <option value="4">Yüksek ve üstü</option>
+          <option value="5">Yalnızca çok yüksek</option>
+          <option value="firsttime">Yalnızca ilk kez alım yapanlar</option>
+        </select>
+        <label class="switch ynd hastip" id="yndRow" data-tip="Açıkken, seçtiğiniz ihtimal seviyesi ne olursa olsun daha önce hiç alım yapmamış (geçmiş verisi olmayan) birimler de listenin altında sarı zeminle gösterilir — gözden kaçırmayın diye.">
+          <span class="txt">Veri olmayan seçenekleri dahil et</span>
+          <input type="checkbox" id="includeNoData" checked><span class="toggle"></span>
+        </label>
+      </div>
+
+      <h3 style="margin-top:20px">Birimler</h3>
+      <label class="switch field" style="margin-bottom:16px">
+        <span class="txt">Sadece bu dönem alım yapanlar</span>
+        <input type="checkbox" id="onlyOpen" checked><span class="toggle"></span>
+      </label>
+
+      <h3>Konum &amp; Yaşam</h3>
+      <div class="field"><label>İl</label><select id="ilSel"><option value="">Tüm iller</option></select></div>
+      <div class="field"><label>Bölge</label><select id="bolgeSel"><option value="">Tüm bölgeler</option></select></div>
+      <div class="field"><label>İl merkezine uzaklık <span class="sub">en fazla</span></label><div class="rangewrap"><input type="range" id="mrkz" min="0" max="170" value="170" step="5"><output id="mrkzOut">Sınırsız</output></div></div>
+      <div class="field"><label>Havalimanına uzaklık <span class="sub">en fazla</span></label><div class="rangewrap"><input type="range" id="hav" min="0" max="140" value="140" step="5"><output id="havOut">Sınırsız</output></div></div>
+      <div class="field"><label>En az nüfus</label><div class="rangewrap"><input type="range" id="nuf" min="0" max="200000" value="0" step="2500"><output id="nufOut">Sınırsız</output></div></div>
+      <div class="field"><label>Ara <span class="sub">il / ilçe adı</span></label><input type="text" id="q" placeholder="örn. Menemen, Bodrum…" autocomplete="off"></div>
+      <button class="reset" id="reset">Filtreleri sıfırla</button>
+    </div>
+  </aside>
+
+  <main>
+    <div class="results-head">
+      <div class="rh-count" id="count">Yükleniyor…</div>
+      <div class="rh-right">
+        <label for="sort">Sırala</label>
+        <select id="sort">
+          <option value="ihtimal">İhtimale göre</option>
+          <option value="merkez">Merkeze yakınlık</option>
+          <option value="hav">Havalimanına yakınlık</option>
+          <option value="nufusDesc">Nüfus (çok→az)</option>
+          <option value="nufusAsc">Nüfus (az→çok)</option>
+          <option value="puanAsc">Taban puanı (düşük→yüksek)</option>
+          <option value="puanDesc">Taban puanı (yüksek→düşük)</option>
+          <option value="kadro">Kontenjan (çok→az)</option>
+        </select>
+      </div>
+    </div>
+    <div class="legend" id="legend"></div>
+    <div class="grid" id="grid"></div>
+    <div class="footer"><div class="disc" id="disc"></div></div>
+  </main>
+</div>
+
+<div class="f-backdrop" id="fbk"></div>
+<button class="f-apply" id="fapply" type="button">Sonuçları göster</button>
+
+<!-- KARŞILAŞTIRMA TEPSİSİ -->
+<div class="cmp-tray" id="cmpTray"></div>
+<!-- KARŞILAŞTIRMA MODALI -->
+<div class="ovl cmp" id="cmpOvl"><div class="cmpbox" id="cmpbox" role="dialog" aria-modal="true"></div></div>
+
+<script src="units.js"></script>
+<script src="common.js"></script>
+<script>
+const S = { score:null, approach:"son", onlyOpen:true, minBand:0, includeNoData:true, onlyFirstTime:false,
+  il:"", bolge:"", mrkz:170, hav:140, nuf:0, q:"", sort:"ihtimal", shown:60 };
+const el = id => document.getElementById(id);
+let compareSet = [];
+try{ compareSet = JSON.parse(sessionStorage.getItem("vhtr_cmp"))||[]; }catch(e){}
+
+window.ALLOW_COMPARE = true;
+window.inCompare = id => compareSet.includes(id);
+window.toggleCompare = id => {
+  const i=compareSet.indexOf(id);
+  if(i>=0) compareSet.splice(i,1);
+  else { if(compareSet.length>=4){ alert("En fazla 4 birim karşılaştırabilirsiniz."); return; } compareSet.push(id); }
+  try{ sessionStorage.setItem("vhtr_cmp",JSON.stringify(compareSet)); }catch(e){}
+  renderTray(); render();
+};
+window.PAGE_REFRESH = ()=>{ refreshCounts(); render(); };
+
+Store.init().then(res=>{
+  S.score = Store.getScore();
+  const iller=[...new Set(UNITS.map(u=>u.il))].sort((a,b)=>a.localeCompare(b,"tr"));
+  const bolgeler=[...new Set(UNITS.map(u=>u.bolge).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"tr"));
+  el("ilSel").insertAdjacentHTML("beforeend", iller.map(i=>`<option value="${i}">${titleTr(i)}</option>`).join(""));
+  el("bolgeSel").insertAdjacentHTML("beforeend", bolgeler.map(b=>`<option value="${b}">${b}</option>`).join(""));
+  el("topKadro").textContent = META.toplamKadro.toLocaleString("tr-TR")+" kadro · "+META.acikBirim+" birim";
+  el("legend").innerHTML = BANDS.map(b=>`<span class="li"><span class="dot" style="background:${b.c}"></span>${b.ad}</span>`).join("")
+    + `<span class="li"><span class="dot" style="background:#f7e9b0;border:1px solid #e6cf7a"></span>İlk kez alım (veri yok)</span>`;
+  el("disc").innerHTML = `<b>Nasıl çalışır?</b> Bu robot, Bakanlığın geçmiş 5 atama dönemine (2017-7, 2020-7, 2022-8, 2022-13, 2024-4) ait
+    <b>taban (en küçük) atama puanlarını</b> KPSS puanınızla karşılaştırır. Yerleşme ihtimali; başvuran sayısı, o dönemki kontenjan ve tercih
+    davranışına göre her yıl değiştiğinden <b>kesin değildir, yol göstericidir.</b> Nüfus verileri TÜİK ADNKS; merkeze ve havalimanına
+    uzaklıklar coğrafi koordinatlardan hesaplanan yaklaşık kuş uçuşu değerlerdir (büyükşehir merkez ilçeleri "Merkez" kabul edilir).
+    "Sınırlı veri", birimin yalnızca tek dönemde alım yaptığını gösterir.` + (Store.isServer()? ` <b style="color:var(--forest)">Listeleriniz sunucuda saklanıyor; her cihazdan aynı listelere ulaşırsınız.</b>`:``);
+  if(S.score!=null) el("score").value = dec(S.score);
+  updateSegHelp(); bindEvents(); refreshCounts(); renderTray(); render();
+});
+
+function updateSegHelp(){ el("segHelp").textContent = APPROACHES[S.approach].ipucu; }
+function refreshCounts(){ el("listCount").textContent = Store.lists().length; }
+
+function bindEvents(){
+  el("score").addEventListener("input", e=>{ const v=parseFloat(e.target.value.replace(",",".")); S.score=isNaN(v)?null:v; Store.setScore(S.score); updateHint(); render(); });
+  document.querySelectorAll("#approach button").forEach(b=>b.addEventListener("click",()=>{
+    document.querySelectorAll("#approach button").forEach(x=>x.classList.remove("on")); b.classList.add("on"); S.approach=b.dataset.a; updateSegHelp(); updateHint(); render();
+  }));
+  el("minBand").addEventListener("change",e=>{
+    if(e.target.value==="firsttime"){ S.onlyFirstTime=true; } else { S.onlyFirstTime=false; S.minBand=+e.target.value; }
+    el("yndRow").classList.toggle("disabled",S.onlyFirstTime); render();
+  });
+  el("includeNoData").addEventListener("change",e=>{S.includeNoData=e.target.checked;render()});
+  el("onlyOpen").addEventListener("change",e=>{S.onlyOpen=e.target.checked;render()});
+  el("ilSel").addEventListener("change",e=>{S.il=e.target.value;render()});
+  el("bolgeSel").addEventListener("change",e=>{S.bolge=e.target.value;render()});
+  el("mrkz").addEventListener("input",e=>{S.mrkz=+e.target.value; el("mrkzOut").textContent=S.mrkz>=170?"Sınırsız":"≤ "+S.mrkz+" km"; render()});
+  el("hav").addEventListener("input",e=>{S.hav=+e.target.value; el("havOut").textContent=S.hav>=140?"Sınırsız":"≤ "+S.hav+" km"; render()});
+  el("nuf").addEventListener("input",e=>{S.nuf=+e.target.value; el("nufOut").textContent=S.nuf<=0?"Sınırsız":"≥ "+fmt(S.nuf); render()});
+  el("q").addEventListener("input",e=>{S.q=e.target.value.trim();render()});
+  el("sort").addEventListener("change",e=>{S.sort=e.target.value;render()});
+  el("reset").addEventListener("click",resetFilters);
+  el("mobBtn").addEventListener("click",()=>document.body.classList.toggle("fopen"));
+  el("fbk").addEventListener("click",()=>document.body.classList.remove("fopen"));
+  el("fapply").addEventListener("click",()=>document.body.classList.remove("fopen"));
+  el("cmpOvl").addEventListener("click",e=>{if(e.target===el("cmpOvl"))closeCmp()});
+  window.addEventListener("storage",()=>{ if(!Store.isServer()){ Store.init().then(()=>{refreshCounts();render();}); } });
+}
+function resetFilters(){
+  Object.assign(S,{il:"",bolge:"",mrkz:170,hav:140,nuf:0,q:"",minBand:0,onlyOpen:true,includeNoData:true,onlyFirstTime:false});
+  el("ilSel").value="";el("bolgeSel").value="";el("mrkz").value=170;el("hav").value=140;el("nuf").value=0;
+  el("q").value="";el("minBand").value="0";el("onlyOpen").checked=true;el("includeNoData").checked=true;el("yndRow").classList.remove("disabled");
+  el("mrkzOut").textContent="Sınırsız";el("havOut").textContent="Sınırsız";el("nufOut").textContent="Sınırsız";
+  render();
+}
+function updateHint(){
+  const h=el("scoreHint");
+  if(S.score==null){h.innerHTML="Puanınızı girin, ihtimaller anında hesaplansın.";return;}
+  if(S.score<60||S.score>100){h.innerHTML="<b>Puan 60–100 aralığında olmalı.</b>";return;}
+  h.innerHTML="İhtimaller <b>"+APPROACHES[S.approach].ad.toLowerCase()+"</b> eşiğine göre hesaplandı.";
+}
+
+function locFilters(u){
+  if(S.onlyOpen && !u.buYilAcik) return false;
+  if(S.il && u.il!==S.il) return false;
+  if(S.bolge && u.bolge!==S.bolge) return false;
+  if(u.merkezeKm!=null && S.mrkz<170 && u.merkezeKm>S.mrkz) return false;
+  if(u.havalimaniKm!=null && S.hav<140 && u.havalimaniKm>S.hav) return false;
+  if(S.nuf>0 && (u.nufus==null || u.nufus<S.nuf)) return false;
+  if(S.q){ const q=S.q.toLocaleLowerCase("tr"); const hay=(u.il+" "+u.ilce+" "+(u.ilceLabel||"")).toLocaleLowerCase("tr"); if(!hay.includes(q)) return false; }
+  return true;
+}
+function passFilters(u){
+  if(!locFilters(u)) return false;
+  if(S.onlyFirstTime) return veriYok(u);
+  if(veriYok(u)) return S.includeNoData;
+  if(S.minBand>0 && S.score!=null && !isNaN(S.score)){ if(bandFor(u,S.score,S.approach).band.id < S.minBand) return false; }
+  return true;
+}
+function sortUnits(list){
+  const bId=u=> S.score!=null?bandFor(u,S.score,S.approach).band.id:-1;
+  const marg=u=>{const r=bandFor(u,S.score,S.approach); return r.margin==null?-999:r.margin;};
+  const cutSon=u=> u.istatistik? u.istatistik.sonEnKucuk : null;
+  const cmp={
+    ihtimal:(a,b)=> (bId(b)-bId(a)) || (marg(b)-marg(a)),
+    merkez:(a,b)=> (a.merkezeKm??1e9)-(b.merkezeKm??1e9),
+    hav:(a,b)=> (a.havalimaniKm??1e9)-(b.havalimaniKm??1e9),
+    nufusDesc:(a,b)=> (b.nufus??-1)-(a.nufus??-1),
+    nufusAsc:(a,b)=> (a.nufus??1e12)-(b.nufus??1e12),
+    puanAsc:(a,b)=> (cutSon(a)??1e9)-(cutSon(b)??1e9),
+    puanDesc:(a,b)=> (cutSon(b)??-1)-(cutSon(a)??-1),
+    kadro:(a,b)=> (b.buYilKontenjan??-1)-(a.buYilKontenjan??-1),
+  }[S.sort];
+  const grp=u=>veriYok(u)?1:0;
+  return list.sort((a,b)=> (S.onlyFirstTime?0:grp(a)-grp(b)) || cmp(a,b) || a.il.localeCompare(b.il,"tr"));
+}
+
+function render(){
+  let list = sortUnits(UNITS.filter(passFilters));
+  const totalKadro=list.reduce((s,u)=>s+(u.buYilKontenjan||0),0);
+  el("count").innerHTML = `<b>${list.length}</b> birim` + (S.onlyOpen? ` · <b>${totalKadro}</b> kadro`:``);
+  el("fapply").textContent = `Sonuçları göster (${list.length} birim)`;
+  window._list=list;
+  const grid=el("grid");
+  if(!list.length){
+    grid.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><h3>Sonuç bulunamadı</h3><p>Filtreleri gevşetmeyi ya da "sadece bu dönem alım yapanlar" seçeneğini kapatmayı deneyin.</p></div>`;
+    return;
+  }
+  const slice=list.slice(0,S.shown);
+  grid.innerHTML = slice.map((u,i)=>cardHTML(u,i)).join("") + (list.length>S.shown? `<button class="more-btn" id="moreBtn">Daha fazla göster (${list.length-S.shown})</button>`:``);
+  grid.querySelectorAll(".unit").forEach(c=>c.addEventListener("click",()=>openUnitModal(window._list[+c.dataset.i],S.score,S.approach)));
+  grid.querySelectorAll(".addlist").forEach(btn=>btn.addEventListener("click",e=>{e.stopPropagation(); openPicker(btn.dataset.id);}));
+  grid.querySelectorAll(".cmpbtn").forEach(btn=>btn.addEventListener("click",e=>{e.stopPropagation(); toggleCompare(btn.dataset.cmp);}));
+  const mb=el("moreBtn"); if(mb) mb.addEventListener("click",()=>{S.shown+=60;render()});
+}
+function bandChipHTML(u){
+  const r = S.score!=null? bandFor(u,S.score,S.approach) : {band:null};
+  if(!r.band) return "";
+  const suf = sinirliVeri(u)? `<span class="sinirli">/sınırlı veri</span>`:"";
+  return `<span class="band" style="color:${r.band.c};background:${r.band.s}">${r.band.ad}${suf}</span>`;
+}
+function cardHTML(u,i){
+  let cls="unit";
+  if(!u.buYilAcik) cls+=" kapali"; else if(veriYok(u)) cls+=" verisiz";
+  const kbadge = u.buYilAcik
+    ? `<span class="k-badge k-open"><span class="kn">${u.buYilKontenjan}</span> kontenjan</span>`
+    : `<span class="k-badge k-none">Bu dönem alım yok</span>`;
+  const taban = u.istatistik
+    ? `<div class="u-score"><span class="txt">Son taban puanı (${u.istatistik.sonDonem})</span><span class="val">${dec(u.istatistik.sonEnKucuk)}</span></div>`
+    : `<div class="u-score"><span class="txt">İlk kez alım</span><span class="val" style="color:#a9821f">geçmiş veri yok</span></div>`;
+  const inList = Store.inAnyList(u.id);
+  const inCmp = compareSet.includes(u.id);
+  const addBtn = u.buYilAcik
+    ? `<button class="addlist${inList?' in':''}" data-id="${u.id}" type="button">
+        <svg viewBox="0 0 24 24" fill="${inList?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 4h12a1 1 0 0 1 1 1v15l-7-4-7 4V5a1 1 0 0 1 1-1Z"/></svg>
+        ${inList?'Listede':'Listeye ekle'}</button>` : `<span class="noadd">Bu dönem tercih edilemez</span>`;
+  return `<article class="${cls}" data-i="${i}">
+    <div class="u-top"><div class="u-name"><span class="il">${titleTr(u.il)}</span>${ilceAd(u)}</div>${bandChipHTML(u)}</div>
+    ${kbadge}
+    <div class="u-stats">
+      <div class="st"><span class="v">${kfmt(u.nufus)}</span><span class="k">nüfus</span></div>
+      <div class="st"><span class="v">${u.merkezeKm!=null?(u.merkezeKm===0?"Merkez":u.merkezeKm+"<small> km</small>"):"—"}</span><span class="k">il merkezine</span></div>
+      <div class="st"><span class="v">${u.havalimaniKm!=null?u.havalimaniKm+"<small> km</small>":"—"}</span><span class="k">havalimanı</span></div>
+    </div>
+    ${taban}
+    <div class="u-foot">
+      ${addBtn}
+      <button class="cmpbtn${inCmp?' in':''}" data-cmp="${u.id}" type="button" title="Karşılaştırmaya ekle" aria-label="Karşılaştır">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3 4 7l4 4M4 7h11M16 21l4-4-4-4M20 17H9"/></svg>
+      </button>
+    </div>
+  </article>`;
+}
+
+/* ---------- KARŞILAŞTIRMA ---------- */
+function renderTray(){
+  const t=el("cmpTray");
+  if(!compareSet.length){ t.classList.remove("on"); return; }
+  t.classList.add("on");
+  const chips=compareSet.map(id=>{const u=unitById(id);return `<span class="cmp-chip">${titleTr(u.il)} · ${ilceAd(u)}<button data-x="${id}" aria-label="Çıkar">×</button></span>`;}).join("");
+  t.innerHTML = `<div class="ct-chips">${chips}</div><div class="ct-act"><button class="ct-open" id="ctOpen">Karşılaştır (${compareSet.length})</button><button class="ct-clear" id="ctClear">Temizle</button></div>`;
+  t.querySelectorAll("[data-x]").forEach(b=>b.addEventListener("click",()=>toggleCompare(b.dataset.x)));
+  el("ctOpen").addEventListener("click",openCmp);
+  el("ctClear").addEventListener("click",()=>{compareSet=[];try{sessionStorage.removeItem("vhtr_cmp")}catch(e){};renderTray();render();});
+}
+function openCmp(){
+  if(!compareSet.length) return;
+  const units=compareSet.map(unitById).filter(Boolean);
+  const rowsDef=[
+    ["İhtimal", u=>{const b=S.score!=null?bandFor(u,S.score,S.approach).band:bandById(0);return `<span class="tb-band" style="color:${b.c};background:${b.s}">${b.id===0?"Veri yok":b.ad}${sinirliVeri(u)?'<span class="sinirli">/sınırlı</span>':''}</span>`;}],
+    ["Bu dönem kontenjan", u=>u.buYilAcik?`<b>${u.buYilKontenjan}</b> kadro`:'<span class="cmuted">—</span>'],
+    ["Son taban ("+ (units.find(u=>u.istatistik)?.istatistik?.sonDonem||"—") +")", u=>u.istatistik?dec(u.istatistik.sonEnKucuk):'<span class="cmuted">veri yok</span>'],
+    ["Ortalama taban", u=>u.istatistik?dec(u.istatistik.ortEnKucuk):'—'],
+    ["En yüksek eşik (garantici)", u=>u.istatistik?dec(u.istatistik.enYuksekEsik):'—'],
+    ["En düşük eşik (iyimser)", u=>u.istatistik?dec(u.istatistik.enDusukEsik):'—'],
+    ["Alım yapılan dönem", u=>u.istatistik?u.istatistik.donemSayisi+(sinirliVeri(u)?' <span class="sinirli">sınırlı</span>':''):'<span class="cmuted">0</span>'],
+    [ (units[0]&&units[0].tip==='ilce'?'İlçe':'İl')+" nüfusu", u=>fmt(u.nufus)],
+    ["İl nüfusu", u=>fmt(u.ilNufus)],
+    ["İl merkezine", u=>u.merkezeKm===0?'Merkez':(u.merkezeKm!=null?u.merkezeKm+' km':'—')],
+    ["En yakın havalimanı", u=>`${u.havalimani||'—'}${u.havalimaniKm!=null?'<br><small>'+u.havalimaniKm+' km</small>':''}`],
+    ["Bölge", u=>u.bolge||'—'],
+  ];
+  const heads = units.map(u=>`<th><div class="cmp-h"><div class="ch-il">${titleTr(u.il)}</div><div class="ch-ad">${ilceAd(u)}</div>
+      <div class="ch-act"><a href="${mapsQuery(u)}" target="_blank" rel="noopener" title="Haritada gör">📍</a><button data-x="${u.id}" title="Çıkar">×</button></div></div></th>`).join("");
+  const body = rowsDef.map(([lbl,fn])=>`<tr><th class="rl">${lbl}</th>${units.map(u=>`<td>${fn(u)}</td>`).join("")}</tr>`).join("");
+  el("cmpbox").innerHTML = `
+    <div class="cmp-head"><h2>Karşılaştırma <span>${units.length} birim</span></h2>
+      <button class="m-close dark" onclick="closeCmp()" aria-label="Kapat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+    <div class="cmp-scroll"><table class="cmp-table"><thead><tr><th class="rl corner">Özellik</th>${heads}</tr></thead><tbody>${body}</tbody></table></div>`;
+  el("cmpbox").querySelectorAll("[data-x]").forEach(b=>b.addEventListener("click",()=>{toggleCompare(b.dataset.x); if(compareSet.length)openCmp(); else closeCmp();}));
+  el("cmpOvl").classList.add("on"); document.body.style.overflow="hidden";
+}
+function closeCmp(){ el("cmpOvl").classList.remove("on"); document.body.style.overflow=""; }
+</script>
+</body>
+</html>
