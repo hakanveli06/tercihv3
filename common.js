@@ -170,13 +170,17 @@ function openUnitModal(u, score, approach){
       (ok?`Eşiğin <b>${dec(r.margin)}</b> puan üzerindesiniz — geçmiş verilere göre yerleşme ihtimaliniz güçlü.`
          :`Eşiğin <b>${dec(Math.abs(r.margin))}</b> puan altındasınız — bu birimde rekabet puanınızın üzerinde seyretmiş.`);
   }
-  const suf = sinirliVeri(u)? ` <span class="sinirli" style="font-size:12px">/sınırlı veri</span>`:"";
+  const suf = sinirliVeri(u)? ` <span class="sinirli">/sınırlı veri</span>`:""
   const rows = u.gecmis.length? u.gecmis.slice().reverse().map(g=>`<tr>
       <td>${g.donem}</td><td>${g.kontenjan??"—"}</td><td class="cut">${g.enKucuk!=null?dec(g.enKucuk):"—"}</td><td>${g.enBuyuk!=null?dec(g.enBuyuk):"—"}</td></tr>`).join("")
     : `<tr><td colspan="4" style="text-align:center;color:var(--muted)">Geçmiş dönem kaydı yok</td></tr>`;
   const chart = u.gecmis.filter(x=>x.enKucuk!=null).length>=2
     ? `<div class="m-sec-t">Geçmiş taban puan seyri</div><div class="chartbox">${historyChartSVG(u)}</div>` : "";
   const inList = Store.inAnyList(u.id);
+  const myLists = Store.listsContaining(u.id);
+  const listTags = myLists.length
+    ? `<div class="m-list-tags"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" width="13" height="13"><path d="M6 4h12a1 1 0 0 1 1 1v15l-7-4-7 4V5a1 1 0 0 1 1-1Z"/></svg>${myLists.map(l=>`<span class="mlt-chip">${escapeHtml(l.name)}</span>`).join('')}</div>`
+    : '';
 
   const listBtn = u.buYilAcik
     ? `<button class="btn-list${inList?' in':''}" id="mAddList" type="button">
@@ -201,10 +205,8 @@ function openUnitModal(u, score, approach){
       </div>
       <div class="m-actions">
         ${listBtn}${cmpBtn}
-        <a class="btn-map" href="${mapsQuery(u)}" target="_blank" rel="noopener">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.5-7-11a7 7 0 1 1 14 0c0 5.5-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>
-          Haritada gör</a>
       </div>
+      ${listTags}
       ${u.buYilAcik
         ? `<div class="fact wide open"><div class="k">Bu dönem açılan kontenjan</div><div class="v">${u.buYilKontenjan} kadro</div></div>`
         : `<div class="fact wide closed"><div class="k">Bu dönem</div><div class="v">Kontenjan açılmadı — bu dönem tercih edilemez</div></div>`}
@@ -217,8 +219,11 @@ function openUnitModal(u, score, approach){
       </div>
       <div class="m-sec-t">Geçmiş Atama Puanları</div>
       <table class="hist"><thead><tr><th>Dönem</th><th>Kont.</th><th>En küçük</th><th>En büyük</th></tr></thead><tbody>${rows}</tbody></table>
-      ${u.istatistik? `<div class="note">Bu birim <b>${u.istatistik.donemSayisi}</b> dönemde alım yapmış. Taban puanı en düşük <b>${dec(u.istatistik.enDusukEsik)}</b>, en yüksek <b>${dec(u.istatistik.enYuksekEsik)}</b>, ortalama <b>${dec(u.istatistik.ortEnKucuk)}</b>.`+(sinirliVeri(u)?' <span class="sinirli">Yalnızca tek dönem verisi olduğu için tahmin sınırlıdır.</span>':'')+`</div>`:""}
+      ${u.istatistik? `<div class="note">Bu birim <b>${u.istatistik.donemSayisi}</b> dönemde alım yapmış. Taban puanı en düşük <b>${dec(u.istatistik.enDusukEsik)}</b>, en yüksek <b>${dec(u.istatistik.enYuksekEsik)}</b>, ortalama <b>${dec(u.istatistik.ortEnKucuk)}</b>.`+(sinirliVeri(u)?` <span class="sinirli">⚠️ Yalnızca tek dönem verisi olduğu için tahmin sınırlıdır.</span>`:'')+`</div>`:""}
       ${chart}
+      <a class="btn-map btn-map-bottom" href="${mapsQuery(u)}" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.5-7-11a7 7 0 1 1 14 0c0 5.5-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        Haritada gör</a>
       ${u.ilKisaBilgi? `<div class="m-sec-t">${titleTr(u.il)} Hakkında</div><div class="kbilgi">${u.ilKisaBilgi}</div>`:""}
     </div>`;
   const la=document.getElementById("mAddList"); if(la) la.addEventListener("click",()=>openPicker(u.id));

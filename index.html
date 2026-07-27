@@ -270,6 +270,10 @@ function cardHTML(u,i){
     : `<div class="u-score"><span class="txt">İlk kez alım</span><span class="val" style="color:#a9821f">geçmiş veri yok</span></div>`;
   const inList = Store.inAnyList(u.id);
   const inCmp = compareSet.includes(u.id);
+  const myLists = Store.listsContaining(u.id);
+  const listTagsCard = myLists.length
+    ? `<div class="u-lists">${myLists.map(l=>`<span class="ulc">${escapeHtml(l.name)}</span>`).join('')}</div>`
+    : '';
   const addBtn = u.buYilAcik
     ? `<button class="addlist${inList?' in':''}" data-id="${u.id}" type="button">
         <svg viewBox="0 0 24 24" fill="${inList?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 4h12a1 1 0 0 1 1 1v15l-7-4-7 4V5a1 1 0 0 1 1-1Z"/></svg>
@@ -283,6 +287,7 @@ function cardHTML(u,i){
       <div class="st"><span class="v">${u.havalimaniKm!=null?u.havalimaniKm+"<small> km</small>":"—"}</span><span class="k">havalimanı</span></div>
     </div>
     ${taban}
+    ${listTagsCard}
     <div class="u-foot">
       ${addBtn}
       <button class="cmpbtn${inCmp?' in':''}" data-cmp="${u.id}" type="button" title="Karşılaştırmaya ekle" aria-label="Karşılaştır">
@@ -311,9 +316,13 @@ function openCmp(){
     ["Bu dönem kontenjan", u=>u.buYilAcik?`<b>${u.buYilKontenjan}</b> kadro`:'<span class="cmuted">—</span>'],
     ["Son taban ("+ (units.find(u=>u.istatistik)?.istatistik?.sonDonem||"—") +")", u=>u.istatistik?dec(u.istatistik.sonEnKucuk):'<span class="cmuted">veri yok</span>'],
     ["Ortalama taban", u=>u.istatistik?dec(u.istatistik.ortEnKucuk):'—'],
-    ["En yüksek eşik (garantici)", u=>u.istatistik?dec(u.istatistik.enYuksekEsik):'—'],
-    ["En düşük eşik (iyimser)", u=>u.istatistik?dec(u.istatistik.enDusukEsik):'—'],
-    ["Alım yapılan dönem", u=>u.istatistik?u.istatistik.donemSayisi+(sinirliVeri(u)?' <span class="sinirli">sınırlı</span>':''):'<span class="cmuted">0</span>'],
+    ...["2017-7","2020-7","2022-8","2022-13","2024-4"].map(donem=>[donem+" · min–maks (kadro)", u=>{
+      const g=(u.gecmis||[]).find(x=>x.donem===donem);
+      if(!g||g.enKucuk==null) return '<span class="cmuted">—</span>';
+      const minv=dec(g.enKucuk), maxv=g.enBuyuk!=null?dec(g.enBuyuk):dec(g.enKucuk);
+      const kont=g.kontenjan!=null?` <span style="color:#c0392b;font-weight:700">(${g.kontenjan})</span>`:'';
+      return minv===maxv ? `${minv}${kont}` : `${minv} – ${maxv}${kont}`;
+    }]),
     [ (units[0]&&units[0].tip==='ilce'?'İlçe':'İl')+" nüfusu", u=>fmt(u.nufus)],
     ["İl nüfusu", u=>fmt(u.ilNufus)],
     ["İl merkezine", u=>u.merkezeKm===0?'Merkez':(u.merkezeKm!=null?u.merkezeKm+' km':'—')],

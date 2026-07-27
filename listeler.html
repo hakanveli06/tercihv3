@@ -204,7 +204,7 @@ function renderTable(){
   m.querySelectorAll("th.sortable").forEach(t=>t.addEventListener("click",()=>doSort(t.dataset.sort)));
   m.querySelectorAll(".ordbtn.up").forEach(b=>b.addEventListener("click",()=>moveRow(b.dataset.id,-1)));
   m.querySelectorAll(".ordbtn.dn").forEach(b=>b.addEventListener("click",()=>moveRow(b.dataset.id,1)));
-  m.querySelectorAll(".tact.rem").forEach(b=>b.addEventListener("click",()=>{Store.removeItem(activeId,b.dataset.id);selected.delete(b.dataset.id);renderAll();}));
+  m.querySelectorAll(".tact.rem").forEach(b=>b.addEventListener("click",()=>{Store.removeItem(activeId,b.dataset.id);selected.delete(b.dataset.id);renderAll();showToast('Birim listeden çıkarıldı','del');}));
   m.querySelectorAll("input[data-id]").forEach(cb=>cb.addEventListener("change",()=>{cb.checked?selected.add(cb.dataset.id):selected.delete(cb.dataset.id);renderRowsSel();renderBulk();}));
   const sa=el("selAll"); if(sa){sa.checked=units.length>0&&units.every(u=>selected.has(u.id)); sa.addEventListener("change",()=>{units.forEach(u=>sa.checked?selected.add(u.id):selected.delete(u.id));renderAll();});}
   m.querySelectorAll(".lm-table tbody tr").forEach(tr=>tr.addEventListener("click",e=>{
@@ -234,13 +234,25 @@ function renderBulk(){
 function clearSel(){ selected.clear(); renderAll(); }
 function bulk(kind){
   const ids=[...selected]; if(!ids.length)return;
-  if(kind==="del"){ ids.forEach(id=>Store.removeItem(activeId,id)); clearSel(); return; }
+  if(kind==="del"){ ids.forEach(id=>Store.removeItem(activeId,id)); clearSel(); showToast(`${ids.length} birim listeden çıkarıldı`,'del'); return; }
   const target=el("bbTarget").value; if(!target){alert("Önce başka bir liste oluşturun.");return;}
+  const targetName=Store.get(target)?.name||'';
   ids.forEach(id=>{ Store.copyItem(target,id); if(kind==="move")Store.removeItem(activeId,id); });
-  if(kind==="move")selected.clear();
+  if(kind==="move"){ selected.clear(); showToast(`${ids.length} birim "${targetName}" listesine taşındı`,'ok'); }
+  else { showToast(`${ids.length} birim "${targetName}" listesine kopyalandı`,'ok'); }
   renderAll();
 }
 function escapeHtml(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+let _toastTimer=null;
+function showToast(msg,type='ok'){
+  let t=document.getElementById('_toast');
+  if(!t){t=document.createElement('div');t.id='_toast';t.className='toast';document.body.appendChild(t);}
+  t.textContent=msg; t.className='toast '+type;
+  clearTimeout(_toastTimer);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>t.classList.add('show')));
+  _toastTimer=setTimeout(()=>{t.classList.remove('show');},2600);
+}
 </script>
 </body>
 </html>
