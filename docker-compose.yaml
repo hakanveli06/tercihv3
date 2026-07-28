@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  tercih_app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tercih-app
+    restart: always
+    ports:
+      - '8094:8000' # Dış/Yerel port : İç uygulama portu
+    volumes:
+      - '/home/hakan/web/tercih.hakanveli.com/data:/app/data'
+    environment:
+      - NODE_ENV=production
