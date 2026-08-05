@@ -8,7 +8,7 @@ services:
     container_name: tercih-app
     restart: always
     ports:
-      - '8094:8080' # Dış/Yerel port : İç uygulama portu (8080 olarak düzeltildi)
+      - '8064:8080' # Dış/Yerel port : İç uygulama portu (8080 olarak düzeltildi)
     volumes:
       - '/home/hakan/web/tercih.hakanveli.com/data:/data' # Veritabanı konumu /data olarak düzeltildi
     environment:
