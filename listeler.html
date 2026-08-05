@@ -51,6 +51,7 @@
 </div>
 
 <script src="units.js"></script>
+<script src="turkey-map.js"></script>
 <script src="common.js"></script>
 <script>
 const el=id=>document.getElementById(id);
@@ -204,7 +205,8 @@ function renderTable(){
       </tr></thead>
       <tbody>${rows}</tbody>
     </table></div>
-    <div class="lm-hint no-print">Sütun başlığına tıklayarak analiz için sıralayın — bu görünüm geçicidir, kaydedilmiş tercih sıranızı bozmaz · "Tercih Sırası" sütununa tıklayarak istediğiniz an kayıtlı sıranıza dönebilirsiniz · ▲▼ ile satırları taşıyın (yalnızca Tercih Sırası görünümündeyken) · satırları seçip alttan başka listeye taşıyın/kopyalayın.</div>`;
+    <div class="lm-hint no-print">Sütun başlığına tıklayarak analiz için sıralayın — bu görünüm geçicidir, kaydedilmiş tercih sıranızı bozmaz · "Tercih Sırası" sütununa tıklayarak istediğiniz an kayıtlı sıranıza dönebilirsiniz · ▲▼ ile satırları taşıyın (yalnızca Tercih Sırası görünümündeyken) · satırları seçip alttan başka listeye taşıyın/kopyalayın.</div>
+    ${renderMapSection(units, prefRank)}`;
 
   bindApproach(); bindTitle(l);
   el("lmPrint").addEventListener("click",()=>window.print());
@@ -218,8 +220,61 @@ function renderTable(){
     if(e.target.closest(".c-chk,.c-ord,.c-act,input,button,a")) return;
     const u=unitById(tr.dataset.id); if(u) openUnitModal(u,score,approach);
   }));
+  m.querySelectorAll(".trmap-m").forEach(g=>g.addEventListener("click",()=>{
+    const u=unitById(g.dataset.id); if(u) openUnitModal(u,score,approach);
+  }));
 }
 function renderRowsSel(){ document.querySelectorAll(".lm-table tbody tr").forEach(tr=>tr.classList.toggle("sel",selected.has(tr.dataset.id))); }
+
+/* ---- tercih haritası: yalnızca ekranda, yazdırmada gizli (no-print) ---- */
+function provinceKeyOf(u){ return String(u.il||"").split("-")[0].toLocaleUpperCase("tr"); }
+function mapMarkers(units, prefRank){
+  const groups = new Map();
+  units.forEach(u=>{
+    const key = provinceKeyOf(u);
+    if(!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(u);
+  });
+  const provIndex = new Map((window.TR_MAP?.provinces||[]).map(p=>[p.il,p]));
+  const markers = [];
+  groups.forEach((arr,key)=>{
+    const p = provIndex.get(key); if(!p) return;
+    const n = arr.length;
+    arr.forEach((u,idx)=>{
+      let x=p.cx, y=p.cy;
+      if(n>1){
+        const r = 8 + Math.min(n,10)*1.3;
+        const ang = (idx/n)*2*Math.PI - Math.PI/2;
+        x = p.cx + r*Math.cos(ang); y = p.cy + r*Math.sin(ang);
+      }
+      markers.push({u,x,y});
+    });
+  });
+  return markers;
+}
+function renderMapSection(units, prefRank){
+  if(!window.TR_MAP || !units.length) return "";
+  const vb = window.TR_MAP.viewBox;
+  const land = window.TR_MAP.provinces.map(p=>`<path d="${p.d}" class="trmap-p"/>`).join("");
+  const markers = mapMarkers(units, prefRank).map(({u,x,y})=>{
+    const r = score!=null?bandFor(u,score,approach):{band:bandById(0)};
+    const rank = prefRank.get(u.id);
+    const tip = `${titleTr(u.il)} · ${ilceAd(u)} — Tercih #${rank}`;
+    return `<g class="trmap-m" data-id="${u.id}" tabindex="0" transform="translate(${x.toFixed(1)},${y.toFixed(1)})">
+      <title>${escapeHtml(tip)}</title>
+      <circle r="7.4" fill="${r.band.c}" stroke="#fff" stroke-width="1.3"/>
+      <text text-anchor="middle" dy="2.8" font-size="7.2" font-weight="700" fill="#fff">${rank}</text>
+    </g>`;
+  }).join("");
+  return `
+    <div class="lm-mapwrap no-print">
+      <div class="lm-map-h">
+        <h3>Tercihlerinizin Türkiye haritasındaki dağılımı</h3>
+        <span class="lm-map-sub">Yuvarlaklardaki sayı tercih sıranızı gösterir · yalnızca ekranda görünür, çıktıya dahil değildir</span>
+      </div>
+      <svg class="trmap-svg" viewBox="${vb}" xmlns="http://www.w3.org/2000/svg">${land}${markers}</svg>
+    </div>`;
+}
 
 function bindApproach(){ document.querySelectorAll("#lmApproach button").forEach(b=>b.addEventListener("click",()=>{approach=b.dataset.a;renderTable();})); }
 function bindTitle(l){ const t=el("lmTitle"); if(t)t.addEventListener("dblclick",()=>{const nn=prompt("Liste adı:",l.name);if(nn&&nn.trim()){Store.rename(l.id,nn.trim());renderAll();}}); }
