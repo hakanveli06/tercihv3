@@ -624,6 +624,10 @@ body.listpage{background:var(--bg)}
   .lm-table tbody tr.verisiz{background:#fdf8e6!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .tn-ad{font-size:9.5px}.tn-il{font-size:7.5px}
   .lm-table tbody tr{page-break-inside:avoid}
+  .lm-mapwrap{margin:0;padding:0;border-top:none;break-before:page;page-break-before:always;break-inside:avoid;page-break-inside:avoid}
+  .lm-map-h h3{font-size:13px}
+  .lm-map-sub{font-size:9px}
+  .trmap-svg{width:100%;max-height:none;border-color:#bbb;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 
 /* liste sayfası responsive */

@@ -188,7 +188,7 @@ function renderTable(){
     <table class="lm-table">
       <thead><tr>
         <th class="c-chk no-print"><label class="tchk"><input type="checkbox" id="selAll"><span class="chkbox"></span></label></th>
-        <th class="c-ord no-print">Sıra</th><th class="c-ord print-only">#</th>
+        <th class="c-ord no-print">No</th><th class="c-ord print-only">No</th>
         ${th("pref","Tercih Sırası","c-num")}
         ${th("il","İl / İlçe","c-name")}
         ${th("kontenjan","Kont.","c-num")}
@@ -226,7 +226,7 @@ function renderTable(){
 }
 function renderRowsSel(){ document.querySelectorAll(".lm-table tbody tr").forEach(tr=>tr.classList.toggle("sel",selected.has(tr.dataset.id))); }
 
-/* ---- tercih haritası: yalnızca ekranda, yazdırmada gizli (no-print) ---- */
+/* ---- tercih haritası: ekranda ve çıktıda görünür, tablo sıralamasını sonrasında ---- */
 function provinceKeyOf(u){ return String(u.il||"").split("-")[0].toLocaleUpperCase("tr"); }
 function mapMarkers(units, prefRank){
   const groups = new Map();
@@ -267,10 +267,10 @@ function renderMapSection(units, prefRank){
     </g>`;
   }).join("");
   return `
-    <div class="lm-mapwrap no-print">
+    <div class="lm-mapwrap">
       <div class="lm-map-h">
         <h3>Tercihlerinizin Türkiye haritasındaki dağılımı</h3>
-        <span class="lm-map-sub">Yuvarlaklardaki sayı tercih sıranızı gösterir · yalnızca ekranda görünür, çıktıya dahil değildir</span>
+        <span class="lm-map-sub">Yuvarlaklardaki sayı tercih sıranızı gösterir</span>
       </div>
       <svg class="trmap-svg" viewBox="${vb}" xmlns="http://www.w3.org/2000/svg">${land}${markers}</svg>
     </div>`;
