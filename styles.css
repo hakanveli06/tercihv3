@@ -564,6 +564,8 @@ body.listpage{background:var(--bg)}
 .tact svg{width:15px;height:15px}
 .tact.map:hover{border-color:var(--forest);color:var(--forest);background:var(--forest-soft)}
 .tact.rem:hover{border-color:#e3a89f;color:#c0392b;background:#fbe7e4}
+.c-prefn{font-weight:600;color:var(--ink2)}
+.c-prefn.hl{color:var(--forest);background:var(--forest-soft)}
 .lm-hint{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.5}
 .lm-empty{text-align:center;padding:60px 20px;color:var(--muted)}
 .lm-empty h3{font-family:"Space Grotesk";font-size:19px;color:var(--ink2);margin-bottom:8px}

@@ -149,7 +149,12 @@ function renderTable(){
     bindApproach(); const pb=el("lmPrint"); if(pb)pb.addEventListener("click",()=>window.print()); bindTitle(l); return;
   }
 
-  const th=(key,label,cls="")=>`<th class="${cls} sortable${sortState.col===key?' sorted':''}" data-sort="${key}">${label}<span class="ar">${sortState.col===key?(sortState.dir>0?'▲':'▼'):''}</span></th>`;
+  const th=(key,label,cls="")=>{
+    const active = key==="pref" ? sortState.col===null : sortState.col===key;
+    return `<th class="${cls} sortable${active?' sorted':''}" data-sort="${key}">${label}<span class="ar">${active?(sortState.dir>0?'▲':'▼'):''}</span></th>`;
+  };
+  const prefRank=new Map(l.items.map((id,i)=>[id,i+1]));
+  const canReorder=!sortState.col;
   const rows=units.map((u,i)=>{
     const r=score!=null?bandFor(u,score,approach):{band:bandById(0)};
     const b=r.band;
@@ -158,8 +163,9 @@ function renderTable(){
     const sel=selected.has(u.id);
     return `<tr class="${sel?'sel':''}${veriYok(u)?' verisiz':''}" data-id="${u.id}">
       <td class="c-chk no-print"><label class="tchk"><input type="checkbox" data-id="${u.id}" ${sel?'checked':''}><span class="chkbox"></span></label></td>
-      <td class="c-ord no-print"><div class="ord"><button class="ordbtn up" data-id="${u.id}" ${i===0?'disabled':''}>▲</button><span class="ordn">${i+1}</span><button class="ordbtn dn" data-id="${u.id}" ${i===units.length-1?'disabled':''}>▼</button></div></td>
+      <td class="c-ord no-print"><div class="ord"><button class="ordbtn up" data-id="${u.id}" ${(!canReorder||i===0)?'disabled':''} ${canReorder?'':'title="Taşımak için Tercih Sırası görünümüne dönün"'}>▲</button><span class="ordn">${i+1}</span><button class="ordbtn dn" data-id="${u.id}" ${(!canReorder||i===units.length-1)?'disabled':''} ${canReorder?'':'title="Taşımak için Tercih Sırası görünümüne dönün"'}>▼</button></div></td>
       <td class="c-ord print-only">${i+1}</td>
+      <td class="c-num c-prefn${sortState.col?' hl':''}">${prefRank.get(u.id)}</td>
       <td class="c-name"><span class="tn-il">${titleTr(u.il)}</span><span class="tn-ad">${ilceAd(u)}</span></td>
       <td class="c-num">${u.buYilAcik?u.buYilKontenjan:'<span class="tb-muted">—</span>'}</td>
       <td class="c-band">${bandCell}</td>
@@ -182,6 +188,7 @@ function renderTable(){
       <thead><tr>
         <th class="c-chk no-print"><label class="tchk"><input type="checkbox" id="selAll"><span class="chkbox"></span></label></th>
         <th class="c-ord no-print">Sıra</th><th class="c-ord print-only">#</th>
+        ${th("pref","Tercih Sırası","c-num")}
         ${th("il","İl / İlçe","c-name")}
         ${th("kontenjan","Kont.","c-num")}
         ${th("band","İhtimal","c-band")}
@@ -197,7 +204,7 @@ function renderTable(){
       </tr></thead>
       <tbody>${rows}</tbody>
     </table></div>
-    <div class="lm-hint no-print">Sütun başlığına tıklayarak sıralayın (sıralama tercih sıranıza kaydedilir) · ▲▼ ile tek tek taşıyın · satırları seçip alttan başka listeye taşıyın/kopyalayın.</div>`;
+    <div class="lm-hint no-print">Sütun başlığına tıklayarak analiz için sıralayın — bu görünüm geçicidir, kaydedilmiş tercih sıranızı bozmaz · "Tercih Sırası" sütununa tıklayarak istediğiniz an kayıtlı sıranıza dönebilirsiniz · ▲▼ ile satırları taşıyın (yalnızca Tercih Sırası görünümündeyken) · satırları seçip alttan başka listeye taşıyın/kopyalayın.</div>`;
 
   bindApproach(); bindTitle(l);
   el("lmPrint").addEventListener("click",()=>window.print());
@@ -216,12 +223,16 @@ function renderRowsSel(){ document.querySelectorAll(".lm-table tbody tr").forEac
 
 function bindApproach(){ document.querySelectorAll("#lmApproach button").forEach(b=>b.addEventListener("click",()=>{approach=b.dataset.a;renderTable();})); }
 function bindTitle(l){ const t=el("lmTitle"); if(t)t.addEventListener("dblclick",()=>{const nn=prompt("Liste adı:",l.name);if(nn&&nn.trim()){Store.rename(l.id,nn.trim());renderAll();}}); }
-function doSort(col){ if(sortState.col===col)sortState.dir*=-1; else{sortState.col=col;sortState.dir=1;}
-  const ordered=activeUnits().map(u=>u.id); Store.reorder(activeId,ordered); renderTable(); }
+function doSort(col){
+  if(col==="pref"){ sortState={col:null,dir:1}; renderTable(); return; }
+  if(sortState.col===col)sortState.dir*=-1; else{sortState.col=col;sortState.dir=1;}
+  renderTable();
+}
 function moveRow(id,dir){
+  if(sortState.col) return; // sadece Tercih Sırası görünümünde satır taşınabilir
   const l=Store.get(activeId); const items=[...l.items]; const i=items.indexOf(id); const j=i+dir;
   if(i<0||j<0||j>=items.length)return; [items[i],items[j]]=[items[j],items[i]];
-  sortState.col=null; Store.reorder(activeId,items); renderTable();
+  Store.reorder(activeId,items); renderTable();
 }
 
 function renderBulk(){
